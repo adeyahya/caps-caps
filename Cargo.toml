@@ -2,6 +2,7 @@
 name = "caps-caps"
 version = "0.1.0"
 authors = ["adeyahya <adeyahyaprasetyo@gmail.com>"]
+license = "BSD 3-Clause License"
 description = "Capslock on steroids"
 edition = "2018"
 
