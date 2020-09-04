@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<Wix
+    xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+    <Product
+        Id='*'
+        Name='Caps Caps'
+        UpgradeCode='86FBE492-1CE7-4181-988E-B6E8BDF5E091'
+        Manufacturer='adeyahya'
+        Language='1033'
+        Codepage='1252'
+        Version='$(var.Version)'>
+        <Package Id='*'
+            Keywords='Installer'
+            Description='Capslock on steroids'
+            Manufacturer='adeyahya'
+            InstallerVersion='450'
+            Languages='1033'
+            Compressed='yes'
+            InstallScope='perMachine'
+            SummaryCodepage='1252'
+            Platform='$(var.Platform)'/>
+        <Icon Id="CapsCapsIco" SourceFile="wix\caps-caps.ico"/>
+        <WixVariable Id="WixUILicenseRtf" Value="wix\license.rtf"/>
+        <Property Id="ARPPRODUCTICON" Value="CapsCapsIco"/>
+        <MajorUpgrade
+            Schedule='afterInstallInitialize'
+            DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.'/>
+        <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1'/>
+        <Property Id='DiskPrompt' Value='Caps Caps Installation'/>
+        <Directory Id='TARGETDIR' Name='SourceDir'>
+            <Directory Id="ProgramFilesFolder">
+                <Directory Id="APPLICATIONROOTDIRECTORY" Name="Caps Caps"/></Directory>
+            <Directory Id="ProgramMenuFolder">
+                <Directory Id="ApplicationProgramsFolder" Name="Caps Caps"/></Directory>
+        </Directory>
+        <DirectoryRef Id="APPLICATIONROOTDIRECTORY">
+            <Component Id="myapplication.exe" Guid="00297360-675c-41f9-8402-224199ce3b0b">
+                <File Id="myapplication.exe" Source="target\release\caps-caps.exe" KeyPath="yes" Checksum="yes"/>
+            </Component>
+            <Component Id="capscaps.ico" Guid="af345a5b-3145-4211-a140-471cf5421c07">
+                <File Id="capscaps.ico" Source="wix\caps-caps.ico" KeyPath="yes" Checksum="yes"/>
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="ApplicationProgramsFolder">
+            <Component Id="ApplicationShortcut" Guid="639a3b85-ea34-4b5d-a887-4eacadd55379">
+                <Shortcut Id="ApplicationStartMenuShortcut" 
+                     Name="Caps Caps" 
+                   Description="Capslock on steroids"
+                    Target="[#myapplication.exe]"
+                          WorkingDirectory="APPLICATIONROOTDIRECTORY"/>
+                <Shortcut Id="UninstallProduct"             
+                          Name="Uninstall Caps Caps"
+                          Description="Uninstalls Caps Caps"
+                          Target="[System64Folder]msiexec.exe"
+                          Arguments="/x [ProductCode]"/>
+                <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
+                <RegistryValue Id="adeyahya.capscaps" Root="HKCU" Action="write"
+                   Key="Software\Microsoft\Windows\CurrentVersion\Run"
+                   Name="adeyahya.capscaps"
+                   Value="[#myapplication.exe]"
+                   Type="string" />
+            </Component>
+        </DirectoryRef>
+        <Feature Id="MainApplication" Title="Caps Caps" Level="1">
+            <ComponentRef Id="myapplication.exe" />
+            <ComponentRef Id="capscaps.ico" />
+            <ComponentRef Id="ApplicationShortcut" />
+        </Feature>
+        <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1"/>
+        <UI>
+          <UIRef Id="WixUI_Minimal" />
+          <Publish Dialog="ExitDialog" 
+              Control="Finish" 
+              Event="DoAction" 
+              Value="LaunchApplication">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
+        </UI>
+        <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch Caps Caps" />
+        <Property Id="WixShellExecTarget" Value="[#myapplication.exe]" />
+        <CustomAction Id="LaunchApplication" 
+            BinaryKey="WixCA" 
+            DllEntry="WixShellExec"
+            Impersonate="yes" />
+    </Product>
+</Wix>
