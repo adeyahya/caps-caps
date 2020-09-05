@@ -4,7 +4,7 @@ Motivation
 ----------
 
 This project was originally started as a complution for me to make a software
-that remaping capslock into esc because there's no existing software eq powertoys/karabiner that can run natively on windows 10 arm64 machine
+that remaping capslock into esc because there's no existing software eq powertoys/karabiner that can run natively on windows 10 Arm machine
 event for the `powertoys` that backed by microsoft who's released Surface Pro X hasn't prioritized it yet
 [https://github.com/microsoft/PowerToys/issues/490](https://github.com/microsoft/PowerToys/issues/490)
 
