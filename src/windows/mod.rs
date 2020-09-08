@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use std::env;
 use systray;
 
@@ -6,14 +7,20 @@ use std::{
     process,
     mem::{size_of, transmute_copy, MaybeUninit},
     ptr::null_mut,
+    sync::Mutex,
+    thread::{spawn, sleep},
+    time::Duration,
     sync::atomic::{AtomicPtr, Ordering},
-    thread::spawn,
 };
 use winapi::{
     ctypes::*,
     shared::{minwindef::*, windef::*},
     um::winuser::*,
 };
+
+lazy_static! {
+    static ref LEADER_STATE: Mutex<bool> = Mutex::new(false);
+}
 
 static KEYBD_HHOOK: Lazy<AtomicPtr<HHOOK__>> = Lazy::new(AtomicPtr::default);
 
@@ -63,28 +70,61 @@ fn set_hook(
 }
 
 unsafe extern "system" fn keybd_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+    let mut l_state = LEADER_STATE.lock().unwrap();
+    let key_code = (*(l_param as *const KBDLLHOOKSTRUCT)).vkCode;
     if w_param as u32 == WM_KEYDOWN {
-        // capslock code
-        if (*(l_param as *const KBDLLHOOKSTRUCT)).vkCode == 0x14 {
-            let mut input = INPUT {
-                type_: INPUT_KEYBOARD,
-                u: {
-                    transmute_copy(&KEYBDINPUT {
-                        wVk: 0x1B,
-                        wScan: MapVirtualKeyW(u64::from(KEYEVENTF_SCANCODE) as u32, 0) as u16,
-                        dwFlags: KEYEVENTF_UNICODE,
-                        time: 0,
-                        dwExtraInfo: 0,
-                    })
-                },
-            };
+        if key_code == 0x14 {
+            *l_state = true;
+            return 1;
+        } else if *l_state == true {
+            *l_state = false;
             spawn(move || {
-                SendInput(1, &mut input as LPINPUT, size_of::<INPUT>() as c_int);
+                // 0x11 virtual key code for ctrl
+                // https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+                press(0x11);
+                press(key_code as u16);
+                sleep(Duration::from_millis(50));
+                release(0x11);
+                release(key_code as u16);
+            });
+            return 1;
+        }
+    }
+
+    if w_param as u32 == WM_KEYUP {
+        if key_code == 0x14 && *l_state == true {
+            *l_state = false;
+            spawn(move || {
+                press(0x1B);
             });
             return 1;
         }
     }
     CallNextHookEx(null_mut(), code, w_param, l_param)
+}
+
+fn press(code: u16) {
+    send_keybd_input(KEYEVENTF_SCANCODE, code);
+}
+
+fn release(code: u16) {
+    send_keybd_input(KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP, code);
+}
+
+fn send_keybd_input(flags: u32, code: u16) {
+    let mut input = INPUT {
+        type_: INPUT_KEYBOARD,
+        u: unsafe {
+            transmute_copy(&KEYBDINPUT {
+                wVk: code,
+                wScan: MapVirtualKeyW(u64::from(code) as u32, 0) as u16,
+                dwFlags: flags,
+                time: 0,
+                dwExtraInfo: 0,
+            })
+        },
+    };
+    unsafe { SendInput(1, &mut input as LPINPUT, size_of::<INPUT>() as c_int) };
 }
 
 fn exit_app() {
