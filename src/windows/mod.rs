@@ -117,7 +117,7 @@ fn send_keybd_input(flags: u32, code: u16) {
         u: unsafe {
             transmute_copy(&KEYBDINPUT {
                 wVk: code,
-                wScan: MapVirtualKeyW(u64::from(code) as u32, 0) as u16,
+                wScan: MapVirtualKeyW(code.into(), 0) as u16,
                 dwFlags: flags,
                 time: 0,
                 dwExtraInfo: 0,
